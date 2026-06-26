@@ -38,6 +38,9 @@ const activePath = computed(() => {
   if (route.path.startsWith('/students')) {
     return '/students'
   }
+  if (route.path.startsWith('/classes')) {
+    return '/classes'
+  }
   return route.path
 })
 </script>

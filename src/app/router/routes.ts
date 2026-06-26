@@ -46,7 +46,7 @@ export const routes: RouteRecordRaw[] = [
       {
         path: 'classes',
         name: 'Classes',
-        ...placeholderRoute('班级管理', '后续维护年级、班级、班主任配置和班级学生。'),
+        component: () => import('../../modules/classes/pages/ClassManagementPage.vue'),
         meta: { title: '班级管理' },
       },
       {
