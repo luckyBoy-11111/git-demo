@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { Back } from '@element-plus/icons-vue'
 import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import ContentPanel from '../../../shared/components/ContentPanel.vue'
@@ -44,7 +45,11 @@ onMounted(loadDetail)
 </script>
 
 <template>
-  <PageHeader title="学生详情" description="集中展示学生档案、家长信息、住宿信息、学籍记录和后续扩展记录。" />
+  <PageHeader title="学生详情" description="集中展示学生档案、家长信息、住宿信息、学籍记录和后续扩展记录。">
+    <template #actions>
+      <el-button :icon="Back" @click="router.push('/students')">返回列表</el-button>
+    </template>
+  </PageHeader>
 
   <ContentPanel v-loading="loading">
     <template v-if="student">
