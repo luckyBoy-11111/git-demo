@@ -1,155 +1,309 @@
 <script setup lang="ts">
-import { Calendar, Download, Edit, Plus, Search, UserFilled, User, Van } from '@element-plus/icons-vue'
-import { computed, ref } from 'vue'
+import { Calendar, Delete, Download, Edit, Plus, Search, User, UserFilled, Van } from '@element-plus/icons-vue'
+import { ElMessageBox, type FormInstance, type FormRules } from 'element-plus'
+import { computed, onMounted, reactive, ref } from 'vue'
 import ContentPanel from '../../../shared/components/ContentPanel.vue'
 import PageHeader from '../../../shared/components/PageHeader.vue'
 import StatusTag from '../../../shared/components/StatusTag.vue'
-import { showInfo } from '../../../shared/utils/tip'
+import { showInfo, showSuccess, showWarning } from '../../../shared/utils/tip'
+import { getStudents, updateStudent } from '../../students/api/student.api'
+import type { Student } from '../../students/types/student'
+import { createClass, deleteClass, getAcademicYears, getClasses, getGrades, updateClass } from '../api/class.api'
+import type { AcademicYear, ClassInfo, ClassPayload, ClassStatus, Grade } from '../types/class'
 
-interface ClassRecord {
-  id: string
+interface ClassRow extends ClassInfo {
   gradeName: string
-  className: string
-  academicYear: string
-  headTeacher: string
+  academicYearName: string
   studentCount: number
   boardingCount: number
   subjectTeacherCount: number
+  headTeacher: string
   classroom: string
-  status: '正常' | '待编班'
+  status: ClassStatus
   updatedAt: string
 }
 
-interface StudentRecord {
-  id: string
-  studentNo: string
-  name: string
-  gender: string
-  status: string
-  boardingType: string
-  phone: string
+interface ClassStudentRow extends Student {
+  gradeName: string
+  className: string
 }
 
 const activeTab = ref('classes')
-const selectedGrade = ref('')
-const selectedStatus = ref('')
+const selectedGradeId = ref('')
+const selectedStatus = ref<ClassStatus | ''>('')
 const keyword = ref('')
+const tableLoading = ref(false)
+const studentLoading = ref(false)
+const dialogVisible = ref(false)
+const transferDialogVisible = ref(false)
+const editingClassId = ref('')
+const selectedClassId = ref('')
+const currentStudent = ref<ClassStudentRow>()
+const formRef = ref<FormInstance>()
+const transferFormRef = ref<FormInstance>()
 
-const gradeCards = [
-  { name: '高一', classes: 6, students: 286, headTeachers: 6, status: '新生年级' },
-  { name: '高二', classes: 6, students: 274, headTeachers: 6, status: '选科走班' },
-  { name: '高三', classes: 5, students: 238, headTeachers: 5, status: '毕业年级' },
-]
+const grades = ref<Grade[]>([])
+const academicYears = ref<AcademicYear[]>([])
+const classes = ref<ClassInfo[]>([])
+const students = ref<Student[]>([])
 
-const classRecords: ClassRecord[] = [
-  {
-    id: 'class_1',
-    gradeName: '高一',
-    className: '高一 1 班',
-    academicYear: '2026-2027 学年',
-    headTeacher: '陈晓敏',
-    studentCount: 48,
-    boardingCount: 31,
-    subjectTeacherCount: 9,
-    classroom: '教学楼 A-301',
-    status: '正常',
-    updatedAt: '2026-06-26 10:12',
-  },
-  {
-    id: 'class_2',
-    gradeName: '高一',
-    className: '高一 2 班',
-    academicYear: '2026-2027 学年',
-    headTeacher: '刘志远',
-    studentCount: 46,
-    boardingCount: 28,
-    subjectTeacherCount: 9,
-    classroom: '教学楼 A-302',
-    status: '正常',
-    updatedAt: '2026-06-26 09:30',
-  },
-  {
-    id: 'class_3',
-    gradeName: '高二',
-    className: '高二 1 班',
-    academicYear: '2026-2027 学年',
-    headTeacher: '赵文静',
-    studentCount: 45,
-    boardingCount: 24,
-    subjectTeacherCount: 10,
-    classroom: '教学楼 B-201',
-    status: '正常',
-    updatedAt: '2026-06-25 17:45',
-  },
-  {
-    id: 'class_4',
-    gradeName: '高三',
-    className: '高三 5 班',
-    academicYear: '2026-2027 学年',
-    headTeacher: '待配置',
-    studentCount: 0,
-    boardingCount: 0,
-    subjectTeacherCount: 0,
-    classroom: '待分配',
-    status: '待编班',
-    updatedAt: '2026-06-25 14:20',
-  },
-]
+const classForm = reactive<ClassPayload>({
+  gradeId: '',
+  name: '',
+  academicYearId: '',
+  headTeacher: '',
+  classroom: '',
+  status: '正常',
+})
 
-const classStudents: StudentRecord[] = [
-  { id: 'stu_001', studentNo: '20260001', name: '张明', gender: '男', status: '在读', boardingType: '住宿', phone: '13900000000' },
-  { id: 'stu_002', studentNo: '20260002', name: '李雨桐', gender: '女', status: '在读', boardingType: '走读', phone: '13900000001' },
-  { id: 'stu_003', studentNo: '20260003', name: '周一鸣', gender: '男', status: '在读', boardingType: '住宿', phone: '13900000003' },
-  { id: 'stu_004', studentNo: '20260004', name: '王思涵', gender: '女', status: '休学', boardingType: '走读', phone: '13900000004' },
-]
+const transferForm = reactive({
+  targetClassId: '',
+})
 
-const teacherAssignments = [
-  { subject: '语文', teacher: '陈晓敏', role: '班主任', phone: '13810000001', weeklyLessons: 5 },
-  { subject: '数学', teacher: '李建华', role: '任课教师', phone: '13810000002', weeklyLessons: 5 },
-  { subject: '英语', teacher: '周琳', role: '任课教师', phone: '13810000003', weeklyLessons: 5 },
-  { subject: '物理', teacher: '黄振宇', role: '任课教师', phone: '13810000004', weeklyLessons: 3 },
-  { subject: '历史', teacher: '马珊', role: '任课教师', phone: '13810000005', weeklyLessons: 2 },
-]
+const classRules: FormRules<ClassPayload> = {
+  gradeId: [{ required: true, message: '请选择年级', trigger: 'change' }],
+  name: [{ required: true, message: '请输入班级名称', trigger: 'blur' }],
+  status: [{ required: true, message: '请选择班级状态', trigger: 'change' }],
+}
 
-const timetable = [
-  { time: '第一节', monday: '语文', tuesday: '数学', wednesday: '英语', thursday: '物理', friday: '语文' },
-  { time: '第二节', monday: '数学', tuesday: '英语', wednesday: '化学', thursday: '语文', friday: '数学' },
-  { time: '第三节', monday: '英语', tuesday: '历史', wednesday: '数学', thursday: '体育', friday: '政治' },
-  { time: '第四节', monday: '物理', tuesday: '语文', wednesday: '音乐', thursday: '英语', friday: '班会' },
-  { time: '第五节', monday: '地理', tuesday: '生物', wednesday: '体育', thursday: '数学', friday: '美术' },
-]
+const transferRules: FormRules<typeof transferForm> = {
+  targetClassId: [{ required: true, message: '请选择目标班级', trigger: 'change' }],
+}
+
+const gradeNameMap = computed(() => new Map(grades.value.map((grade) => [grade.id, grade.name])))
+const academicYearNameMap = computed(() => new Map(academicYears.value.map((year) => [year.id, year.name])))
+const classNameMap = computed(() => new Map(classes.value.map((item) => [item.id, item.name])))
+
+const decoratedClasses = computed<ClassRow[]>(() =>
+  classes.value.map((item) => {
+    const classStudents = students.value.filter((student) => student.classId === item.id)
+    return {
+      ...item,
+      gradeName: gradeNameMap.value.get(item.gradeId) || '未设置',
+      academicYearName: academicYearNameMap.value.get(item.academicYearId || '') || '未设置',
+      studentCount: classStudents.length,
+      boardingCount: classStudents.filter((student) => student.boardingType === '住宿').length,
+      subjectTeacherCount: 0,
+      headTeacher: item.headTeacher || '待配置',
+      classroom: item.classroom || '待分配',
+      status: item.status || '正常',
+      updatedAt: item.updatedAt || '-',
+    }
+  }),
+)
 
 const filteredClasses = computed(() => {
-  return classRecords.filter((item) => {
-    const gradeMatched = !selectedGrade.value || item.gradeName === selectedGrade.value
+  const value = keyword.value.trim()
+
+  return decoratedClasses.value.filter((item) => {
+    const gradeMatched = !selectedGradeId.value || item.gradeId === selectedGradeId.value
     const statusMatched = !selectedStatus.value || item.status === selectedStatus.value
     const keywordMatched =
-      !keyword.value || [item.className, item.headTeacher, item.classroom].some((field) => field.includes(keyword.value))
+      !value || [item.name, item.gradeName, item.headTeacher, item.classroom].some((field) => field.includes(value))
     return gradeMatched && statusMatched && keywordMatched
   })
 })
 
-const classTotal = computed(() => classRecords.length)
-const studentTotal = computed(() => classRecords.reduce((sum, item) => sum + item.studentCount, 0))
-const teacherTotal = computed(() => teacherAssignments.length)
-const boardingTotal = computed(() => classRecords.reduce((sum, item) => sum + item.boardingCount, 0))
+const selectedClass = computed(() => decoratedClasses.value.find((item) => item.id === selectedClassId.value))
+
+const classStudentRows = computed<ClassStudentRow[]>(() =>
+  students.value
+    .filter((student) => !selectedClassId.value || student.classId === selectedClassId.value)
+    .map((student) => ({
+      ...student,
+      gradeName: gradeNameMap.value.get(student.gradeId) || '未设置',
+      className: classNameMap.value.get(student.classId) || '未编班',
+    })),
+)
+
+const gradeCards = computed(() =>
+  grades.value.map((grade) => {
+    const gradeClasses = decoratedClasses.value.filter((item) => item.gradeId === grade.id)
+    const gradeStudents = students.value.filter((student) => student.gradeId === grade.id)
+    const headTeacherCount = gradeClasses.filter((item) => item.headTeacher !== '待配置').length
+
+    return {
+      id: grade.id,
+      name: grade.name,
+      classes: gradeClasses.length,
+      students: gradeStudents.length,
+      headTeachers: headTeacherCount,
+      status: gradeClasses.some((item) => item.status === '待编班') ? '待完善' : '正常',
+    }
+  }),
+)
+
+const classTotal = computed(() => classes.value.length)
+const studentTotal = computed(() => students.value.length)
+const teacherTotal = computed(() => decoratedClasses.value.filter((item) => item.headTeacher !== '待配置').length)
+const boardingTotal = computed(() => students.value.filter((item) => item.boardingType === '住宿').length)
+
+const teacherAssignments = computed(() => [
+  {
+    subject: '班主任',
+    teacher: selectedClass.value?.headTeacher || '待配置',
+    role: '班主任',
+    phone: '-',
+    weeklyLessons: 0,
+  },
+])
+
+const timetable = [
+  { time: '第一节', monday: '待排课', tuesday: '待排课', wednesday: '待排课', thursday: '待排课', friday: '待排课' },
+  { time: '第二节', monday: '待排课', tuesday: '待排课', wednesday: '待排课', thursday: '待排课', friday: '待排课' },
+  { time: '第三节', monday: '待排课', tuesday: '待排课', wednesday: '待排课', thursday: '待排课', friday: '待排课' },
+  { time: '第四节', monday: '待排课', tuesday: '待排课', wednesday: '待排课', thursday: '待排课', friday: '待排课' },
+  { time: '第五节', monday: '待排课', tuesday: '待排课', wednesday: '待排课', thursday: '待排课', friday: '待排课' },
+]
+
+const loadData = async () => {
+  tableLoading.value = true
+  studentLoading.value = true
+  try {
+    const [gradeList, academicYearList, classList, studentList] = await Promise.all([
+      getGrades(),
+      getAcademicYears(),
+      getClasses(),
+      getStudents(),
+    ])
+    grades.value = gradeList
+    academicYears.value = academicYearList
+    classes.value = classList
+    students.value = studentList
+
+    if (!selectedClassId.value && classList[0]) {
+      selectedClassId.value = classList[0].id
+    }
+  } finally {
+    tableLoading.value = false
+    studentLoading.value = false
+  }
+}
+
+const resetClassForm = () => {
+  editingClassId.value = ''
+  classForm.gradeId = grades.value[0]?.id || ''
+  classForm.name = ''
+  classForm.academicYearId = academicYears.value[0]?.id || ''
+  classForm.headTeacher = ''
+  classForm.classroom = ''
+  classForm.status = '正常'
+  formRef.value?.clearValidate()
+}
 
 const resetFilters = () => {
-  selectedGrade.value = ''
+  selectedGradeId.value = ''
   selectedStatus.value = ''
   keyword.value = ''
+}
+
+const openCreateDialog = () => {
+  resetClassForm()
+  dialogVisible.value = true
+}
+
+const openEditDialog = (row: ClassRow) => {
+  editingClassId.value = row.id
+  classForm.gradeId = row.gradeId
+  classForm.name = row.name
+  classForm.academicYearId = row.academicYearId || ''
+  classForm.headTeacher = row.headTeacher === '待配置' ? '' : row.headTeacher
+  classForm.classroom = row.classroom === '待分配' ? '' : row.classroom
+  classForm.status = row.status
+  formRef.value?.clearValidate()
+  dialogVisible.value = true
+}
+
+const saveClass = async () => {
+  await formRef.value?.validate()
+
+  if (editingClassId.value) {
+    await updateClass(editingClassId.value, classForm)
+    showSuccess('班级信息已更新')
+  } else {
+    await createClass(classForm)
+    showSuccess('班级已新增')
+  }
+
+  dialogVisible.value = false
+  await loadData()
+}
+
+const removeClass = async (row: ClassRow) => {
+  if (row.studentCount > 0) {
+    showWarning('该班级下还有学生，需先完成学生转班后再删除')
+    return
+  }
+
+  try {
+    await ElMessageBox.confirm(`确定删除“${row.name}”吗？删除后不可恢复。`, '删除确认', {
+      type: 'warning',
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      confirmButtonClass: 'el-button--danger',
+    })
+  } catch {
+    return
+  }
+
+  await deleteClass(row.id)
+  showSuccess('班级已删除')
+  await loadData()
+}
+
+const viewClassStudents = (row: ClassRow) => {
+  selectedClassId.value = row.id
+  activeTab.value = 'students'
+}
+
+const viewClassTimetable = (row: ClassRow) => {
+  selectedClassId.value = row.id
+  activeTab.value = 'timetable'
+}
+
+const openTransferDialog = (student: ClassStudentRow) => {
+  currentStudent.value = student
+  transferForm.targetClassId = student.classId
+  transferFormRef.value?.clearValidate()
+  transferDialogVisible.value = true
+}
+
+const saveStudentTransfer = async () => {
+  await transferFormRef.value?.validate()
+
+  if (!currentStudent.value) return
+
+  const targetClass = classes.value.find((item) => item.id === transferForm.targetClassId)
+  if (!targetClass) return
+
+  await updateStudent(currentStudent.value.id, {
+    classId: targetClass.id,
+    gradeId: targetClass.gradeId,
+  })
+  showSuccess('学生班级已调整')
+  transferDialogVisible.value = false
+  selectedClassId.value = targetClass.id
+  await loadData()
+}
+
+const exportClasses = () => {
+  showInfo('导出班级数据将在后续接入文件导出能力')
 }
 
 const showTodo = (name: string) => {
   showInfo(`${name}功能将在后续接入接口后实现`)
 }
+
+onMounted(() => {
+  loadData()
+})
 </script>
 
 <template>
   <PageHeader title="班级管理" description="维护年级、行政班、班级学生、班主任、任课教师与班级课表等基础教务数据。">
     <template #actions>
-      <el-button :icon="Download" @click="showTodo('导出班级数据')">导出</el-button>
-      <el-button type="primary" :icon="Plus" @click="showTodo('新增班级')">新增班级</el-button>
+      <el-button :icon="Download" @click="exportClasses">导出</el-button>
+      <el-button type="primary" :icon="Plus" @click="openCreateDialog">新增班级</el-button>
     </template>
   </PageHeader>
 
@@ -157,17 +311,17 @@ const showTodo = (name: string) => {
     <div class="overview-card">
       <span>班级总数</span>
       <strong>{{ classTotal }}</strong>
-      <small>覆盖高一至高三</small>
+      <small>来自班级接口</small>
     </div>
     <div class="overview-card">
       <span>在班学生</span>
       <strong>{{ studentTotal }}</strong>
-      <small>按行政班统计</small>
+      <small>按学生档案统计</small>
     </div>
     <div class="overview-card">
-      <span>任课教师</span>
+      <span>班主任</span>
       <strong>{{ teacherTotal }}</strong>
-      <small>当前示例班级配置</small>
+      <small>已配置班主任数</small>
     </div>
     <div class="overview-card">
       <span>住宿学生</span>
@@ -181,10 +335,8 @@ const showTodo = (name: string) => {
       <el-tab-pane label="班级列表" name="classes">
         <div class="filter-bar">
           <el-input v-model="keyword" :prefix-icon="Search" placeholder="搜索班级、班主任、教室" clearable />
-          <el-select v-model="selectedGrade" placeholder="年级" clearable>
-            <el-option label="高一" value="高一" />
-            <el-option label="高二" value="高二" />
-            <el-option label="高三" value="高三" />
+          <el-select v-model="selectedGradeId" placeholder="年级" clearable>
+            <el-option v-for="grade in grades" :key="grade.id" :label="grade.name" :value="grade.id" />
           </el-select>
           <el-select v-model="selectedStatus" placeholder="班级状态" clearable>
             <el-option label="正常" value="正常" />
@@ -193,10 +345,10 @@ const showTodo = (name: string) => {
           <el-button @click="resetFilters">重置</el-button>
         </div>
 
-        <el-table :data="filteredClasses" row-key="id">
-          <el-table-column prop="className" label="班级" min-width="120" />
+        <el-table v-loading="tableLoading" :data="filteredClasses" row-key="id">
+          <el-table-column prop="name" label="班级" min-width="120" />
           <el-table-column prop="gradeName" label="年级" width="90" />
-          <el-table-column prop="academicYear" label="学年" min-width="140" />
+          <el-table-column prop="academicYearName" label="学年" min-width="140" />
           <el-table-column prop="headTeacher" label="班主任" min-width="110" />
           <el-table-column prop="studentCount" label="学生数" width="90" />
           <el-table-column prop="boardingCount" label="住宿数" width="90" />
@@ -208,11 +360,12 @@ const showTodo = (name: string) => {
             </template>
           </el-table-column>
           <el-table-column prop="updatedAt" label="更新时间" min-width="150" />
-          <el-table-column label="操作" fixed="right" width="220">
-            <template #default>
-              <el-button link type="primary" :icon="Edit" @click="showTodo('编辑班级')">编辑</el-button>
-              <el-button link type="primary" :icon="UserFilled" @click="activeTab = 'students'">学生</el-button>
-              <el-button link type="primary" :icon="Calendar" @click="activeTab = 'timetable'">课表</el-button>
+          <el-table-column label="操作" fixed="right" width="260">
+            <template #default="{ row }">
+              <el-button link type="primary" :icon="Edit" @click="openEditDialog(row)">编辑</el-button>
+              <el-button link type="primary" :icon="UserFilled" @click="viewClassStudents(row)">学生</el-button>
+              <el-button link type="primary" :icon="Calendar" @click="viewClassTimetable(row)">课表</el-button>
+              <el-button link type="danger" :icon="Delete" @click="removeClass(row)">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -220,10 +373,10 @@ const showTodo = (name: string) => {
 
       <el-tab-pane label="年级管理" name="grades">
         <div class="grade-grid">
-          <article v-for="grade in gradeCards" :key="grade.name" class="grade-card">
+          <article v-for="grade in gradeCards" :key="grade.id" class="grade-card">
             <div>
               <strong>{{ grade.name }}</strong>
-              <StatusTag :value="grade.status" type="primary" />
+              <StatusTag :value="grade.status" :type="grade.status === '正常' ? 'success' : 'warning'" />
             </div>
             <dl>
               <div>
@@ -247,18 +400,22 @@ const showTodo = (name: string) => {
       <el-tab-pane label="班级学生" name="students">
         <div class="section-toolbar">
           <div>
-            <strong>高一 1 班学生</strong>
-            <span>静态展示学生编班结果，后续可接入转入、转出和批量编班。</span>
+            <strong>{{ selectedClass?.name || '全部班级' }}学生</strong>
+            <span>学生数据来自学生档案接口，转班会同步更新学生当前年级和班级。</span>
           </div>
-          <el-button type="primary" :icon="Plus" @click="showTodo('添加班级学生')">添加学生</el-button>
+          <el-select v-model="selectedClassId" placeholder="选择班级" class="class-selector" clearable>
+            <el-option v-for="item in decoratedClasses" :key="item.id" :label="item.name" :value="item.id" />
+          </el-select>
         </div>
-        <el-table :data="classStudents" row-key="id">
+        <el-table v-loading="studentLoading" :data="classStudentRows" row-key="id">
           <el-table-column prop="studentNo" label="学号" min-width="110" />
           <el-table-column prop="name" label="姓名" min-width="100" />
           <el-table-column prop="gender" label="性别" width="80" />
+          <el-table-column prop="gradeName" label="年级" width="90" />
+          <el-table-column prop="className" label="班级" min-width="120" />
           <el-table-column label="学籍状态" width="110">
             <template #default="{ row }">
-              <StatusTag :value="row.status" :type="row.status === '在读' ? 'success' : 'warning'" />
+              <StatusTag :value="row.studentStatus" :type="row.studentStatus === '在读' ? 'success' : 'warning'" />
             </template>
           </el-table-column>
           <el-table-column label="住宿状态" width="110">
@@ -266,10 +423,10 @@ const showTodo = (name: string) => {
               <StatusTag :value="row.boardingType" :type="row.boardingType === '住宿' ? 'primary' : 'info'" />
             </template>
           </el-table-column>
-          <el-table-column prop="phone" label="主要联系人电话" min-width="140" />
+          <el-table-column prop="primaryContactPhone" label="主要联系人电话" min-width="140" />
           <el-table-column label="操作" width="160">
-            <template #default>
-              <el-button link type="primary" :icon="Edit" @click="showTodo('调整学生班级')">调整</el-button>
+            <template #default="{ row }">
+              <el-button link type="primary" :icon="Edit" @click="openTransferDialog(row)">转班</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -278,10 +435,10 @@ const showTodo = (name: string) => {
       <el-tab-pane label="教师配置" name="teachers">
         <div class="section-toolbar">
           <div>
-            <strong>班主任与任课教师</strong>
-            <span>配置班主任、各学科任课教师与周课时，为排课模块保留数据入口。</span>
+            <strong>{{ selectedClass?.name || '班级' }}班主任与任课教师</strong>
+            <span>班主任字段已接入班级接口，任课教师明细待教师模块数据表补齐后接入。</span>
           </div>
-          <el-button type="primary" :icon="User" @click="showTodo('配置任课教师')">配置教师</el-button>
+          <el-button type="primary" :icon="User" @click="selectedClass && openEditDialog(selectedClass)">配置班主任</el-button>
         </div>
         <el-table :data="teacherAssignments" row-key="subject">
           <el-table-column prop="subject" label="科目" width="110" />
@@ -295,7 +452,7 @@ const showTodo = (name: string) => {
           <el-table-column prop="weeklyLessons" label="周课时" width="100" />
           <el-table-column label="操作" width="160">
             <template #default>
-              <el-button link type="primary" :icon="Edit" @click="showTodo('编辑教师配置')">编辑</el-button>
+              <el-button link type="primary" :icon="Edit" @click="selectedClass && openEditDialog(selectedClass)">编辑</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -304,8 +461,8 @@ const showTodo = (name: string) => {
       <el-tab-pane label="班级课表" name="timetable">
         <div class="section-toolbar">
           <div>
-            <strong>高一 1 班课表</strong>
-            <span>当前为静态课表预览，后续由排课管理模块统一生成和调整。</span>
+            <strong>{{ selectedClass?.name || '班级' }}课表</strong>
+            <span>课表数据表暂未建立，当前保留排课模块接入入口。</span>
           </div>
           <el-button type="primary" :icon="Van" @click="showTodo('调课')">调课</el-button>
         </div>
@@ -320,6 +477,57 @@ const showTodo = (name: string) => {
       </el-tab-pane>
     </el-tabs>
   </ContentPanel>
+
+  <el-dialog v-model="dialogVisible" :title="editingClassId ? '编辑班级' : '新增班级'" width="560px">
+    <el-form ref="formRef" :model="classForm" :rules="classRules" label-width="92px">
+      <el-form-item label="所属年级" prop="gradeId">
+        <el-select v-model="classForm.gradeId" placeholder="请选择年级">
+          <el-option v-for="grade in grades" :key="grade.id" :label="grade.name" :value="grade.id" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="班级名称" prop="name">
+        <el-input v-model="classForm.name" placeholder="例如：高一 1 班" />
+      </el-form-item>
+      <el-form-item label="学年" prop="academicYearId">
+        <el-select v-model="classForm.academicYearId" placeholder="请选择学年" clearable>
+          <el-option v-for="year in academicYears" :key="year.id" :label="year.name" :value="year.id" />
+        </el-select>
+      </el-form-item>
+      <el-form-item label="班主任" prop="headTeacher">
+        <el-input v-model="classForm.headTeacher" placeholder="请输入班主任姓名" />
+      </el-form-item>
+      <el-form-item label="固定教室" prop="classroom">
+        <el-input v-model="classForm.classroom" placeholder="例如：教学楼 A-301" />
+      </el-form-item>
+      <el-form-item label="班级状态" prop="status">
+        <el-select v-model="classForm.status" placeholder="请选择班级状态">
+          <el-option label="正常" value="正常" />
+          <el-option label="待编班" value="待编班" />
+        </el-select>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="dialogVisible = false">取消</el-button>
+      <el-button type="primary" @click="saveClass">保存</el-button>
+    </template>
+  </el-dialog>
+
+  <el-dialog v-model="transferDialogVisible" title="调整学生班级" width="460px">
+    <el-form ref="transferFormRef" :model="transferForm" :rules="transferRules" label-width="92px">
+      <el-form-item label="学生">
+        <el-input :model-value="currentStudent?.name" disabled />
+      </el-form-item>
+      <el-form-item label="目标班级" prop="targetClassId">
+        <el-select v-model="transferForm.targetClassId" placeholder="请选择目标班级">
+          <el-option v-for="item in decoratedClasses" :key="item.id" :label="item.name" :value="item.id" />
+        </el-select>
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="transferDialogVisible = false">取消</el-button>
+      <el-button type="primary" @click="saveStudentTransfer">保存</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <style scoped>
@@ -393,6 +601,10 @@ const showTodo = (name: string) => {
   font-size: 15px;
 }
 
+.class-selector {
+  width: 220px;
+}
+
 dl {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -423,5 +635,33 @@ dd {
 
 .timetable :deep(.cell) {
   font-weight: 500;
+}
+
+@media (max-width: 1100px) {
+  .overview-grid,
+  .grade-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .filter-bar {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .overview-grid,
+  .grade-grid,
+  .filter-bar {
+    grid-template-columns: 1fr;
+  }
+
+  .section-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .class-selector {
+    width: 100%;
+  }
 }
 </style>

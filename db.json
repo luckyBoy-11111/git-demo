@@ -30,17 +30,35 @@
     {
       "id": "class_1",
       "gradeId": "grade_1",
-      "name": "高一 1 班"
+      "name": "高一 1 班",
+      "headTeacher": "陈晓敏",
+      "status": "正常",
+      "createdAt": "2026-06-25 21:00:00",
+      "updatedAt": "2026-06-26 10:12:00",
+      "academicYearId": "year_2026",
+      "classroom": "教学楼 A-301"
     },
     {
       "id": "class_2",
       "gradeId": "grade_1",
-      "name": "高一 2 班"
+      "name": "高一 2 班",
+      "headTeacher": "刘志远",
+      "status": "正常",
+      "createdAt": "2026-06-25 21:00:00",
+      "updatedAt": "2026-06-26 09:30:00",
+      "academicYearId": "year_2026",
+      "classroom": "教学楼 A-302"
     },
     {
       "id": "class_3",
       "gradeId": "grade_2",
-      "name": "高二 1 班"
+      "name": "高二 1 班",
+      "headTeacher": "赵文静",
+      "status": "正常",
+      "createdAt": "2026-06-25 21:00:00",
+      "updatedAt": "2026-06-25 17:45:00",
+      "academicYearId": "year_2026",
+      "classroom": "教学楼 B-201"
     }
   ],
   "students": [
@@ -73,6 +91,20 @@
       "remark": "",
       "createdAt": "2026-06-25 21:00:00",
       "updatedAt": "2026-06-27 01:14:44"
+    },
+    {
+      "gender": "男",
+      "studentStatus": "在读",
+      "boardingType": "走读",
+      "academicYearId": "year_2026",
+      "semesterId": "semester_2026_1",
+      "enrollmentYear": 2026,
+      "classId": "class_1",
+      "studentNo": "123",
+      "name": "123",
+      "createdAt": "2026-06-27 01:53:19",
+      "updatedAt": "2026-06-27 01:53:19",
+      "id": "e_GYWH6SFnY"
     }
   ],
   "parents": [
