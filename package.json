@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "mock": "json-server --watch db.json --port 3001",
+    "dev:all": "concurrently \"pnpm dev\" \"pnpm mock\"",
     "build": "vue-tsc -b && vite build",
     "preview": "vite preview"
   },
