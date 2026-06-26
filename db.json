@@ -1,25 +1,53 @@
 {
   "academicYears": [
-    { "id": "year_2026", "name": "2026-2027 学年" }
+    {
+      "id": "year_2026",
+      "name": "2026-2027 学年"
+    }
   ],
   "semesters": [
-    { "id": "semester_2026_1", "academicYearId": "year_2026", "name": "第一学期" }
+    {
+      "id": "semester_2026_1",
+      "academicYearId": "year_2026",
+      "name": "第一学期"
+    }
   ],
   "grades": [
-    { "id": "grade_1", "name": "高一" },
-    { "id": "grade_2", "name": "高二" },
-    { "id": "grade_3", "name": "高三" }
+    {
+      "id": "grade_1",
+      "name": "高一"
+    },
+    {
+      "id": "grade_2",
+      "name": "高二"
+    },
+    {
+      "id": "grade_3",
+      "name": "高三"
+    }
   ],
   "classes": [
-    { "id": "class_1", "gradeId": "grade_1", "name": "高一 1 班" },
-    { "id": "class_2", "gradeId": "grade_1", "name": "高一 2 班" },
-    { "id": "class_3", "gradeId": "grade_2", "name": "高二 1 班" }
+    {
+      "id": "class_1",
+      "gradeId": "grade_1",
+      "name": "高一 1 班"
+    },
+    {
+      "id": "class_2",
+      "gradeId": "grade_1",
+      "name": "高一 2 班"
+    },
+    {
+      "id": "class_3",
+      "gradeId": "grade_2",
+      "name": "高二 1 班"
+    }
   ],
   "students": [
     {
       "id": "stu_001",
       "studentNo": "20260001",
-      "name": "张明",
+      "name": "张明123",
       "gender": "男",
       "birthDate": "2009-05-12",
       "nation": "汉族",
@@ -44,33 +72,7 @@
       "primaryContactPhone": "13900000000",
       "remark": "",
       "createdAt": "2026-06-25 21:00:00",
-      "updatedAt": "2026-06-25 21:00:00"
-    },
-    {
-      "id": "stu_002",
-      "studentNo": "20260002",
-      "name": "李雨桐",
-      "gender": "女",
-      "birthDate": "2009-08-20",
-      "nation": "汉族",
-      "idCardNo": "110101200908200022",
-      "politicalStatus": "群众",
-      "phone": "13800000001",
-      "address": "北京市朝阳区示例街 8 号",
-      "gradeId": "grade_1",
-      "classId": "class_2",
-      "academicYearId": "year_2026",
-      "semesterId": "semester_2026_1",
-      "enrollmentYear": 2026,
-      "enrollmentDate": "2026-09-01",
-      "studentStatus": "在读",
-      "studentRegistryNo": "G20260002",
-      "boardingType": "走读",
-      "primaryContactName": "李国强",
-      "primaryContactPhone": "13900000001",
-      "remark": "",
-      "createdAt": "2026-06-25 21:10:00",
-      "updatedAt": "2026-06-25 21:10:00"
+      "updatedAt": "2026-06-27 01:14:44"
     }
   ],
   "parents": [
@@ -105,7 +107,25 @@
     }
   ],
   "dictionaries": [
-    { "id": "dict_student_status", "name": "学生状态", "items": ["在读", "休学", "转出", "退学", "毕业"] },
-    { "id": "dict_boarding_type", "name": "住宿状态", "items": ["走读", "住宿"] }
-  ]
+    {
+      "id": "dict_student_status",
+      "name": "学生状态",
+      "items": [
+        "在读",
+        "休学",
+        "转出",
+        "退学",
+        "毕业"
+      ]
+    },
+    {
+      "id": "dict_boarding_type",
+      "name": "住宿状态",
+      "items": [
+        "走读",
+        "住宿"
+      ]
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
 }

@@ -1,42 +1,65 @@
 <script setup lang="ts">
-import { Plus, Upload, Download } from '@element-plus/icons-vue'
-import { ref } from 'vue'
+import { Download, Plus, Upload } from '@element-plus/icons-vue'
+import { ElMessageBox } from 'element-plus'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import ContentPanel from '../../../shared/components/ContentPanel.vue'
 import PageHeader from '../../../shared/components/PageHeader.vue'
-import { endLoading, startLoading } from '../../../shared/hooks/useGlobalLoading'
 import { showInfo, showSuccess } from '../../../shared/utils/tip'
+import { deleteStudent, getStudents } from '../api/student.api'
 import StudentSearchForm from '../components/StudentSearchForm.vue'
 import StudentTable from '../components/StudentTable.vue'
 import StatusChangeDialog from '../components/StatusChangeDialog.vue'
 import type { Student, StudentSearchParams } from '../types/student'
-import { mockStudents } from '../utils/mock-data'
 
 const router = useRouter()
 const searchParams = ref<StudentSearchParams>({})
-const students = ref<Student[]>(mockStudents)
+const students = ref<Student[]>([])
 const tableLoading = ref(false)
 const statusDialogVisible = ref(false)
 const currentStudent = ref<Student>()
 
-const searchStudents = () => {
-  startLoading({ text: '正在查询学生档案...' })
+const loadStudents = async (showMessage = false) => {
   tableLoading.value = true
-  window.setTimeout(() => {
+  try {
+    students.value = await getStudents(searchParams.value)
+    if (showMessage) {
+      showSuccess('查询完成')
+    }
+  } finally {
     tableLoading.value = false
-    endLoading()
-    showSuccess('查询完成')
-  }, 350)
+  }
+}
+
+const searchStudents = () => {
+  loadStudents(true)
 }
 
 const resetSearch = () => {
   searchParams.value = {}
-  students.value = mockStudents
+  loadStudents()
 }
 
 const openStatusChange = (student: Student) => {
   currentStudent.value = student
   statusDialogVisible.value = true
+}
+
+const removeStudent = async (student: Student) => {
+  try {
+    await ElMessageBox.confirm(`确定删除学生“${student.name}”的档案吗？删除后不可恢复。`, '删除确认', {
+      type: 'warning',
+      confirmButtonText: '删除',
+      cancelButtonText: '取消',
+      confirmButtonClass: 'el-button--danger',
+    })
+  } catch {
+    return
+  }
+
+  await deleteStudent(student.id)
+  showSuccess('学生档案已删除')
+  await loadStudents()
 }
 
 const saveStatusChange = () => {
@@ -47,6 +70,10 @@ const saveStatusChange = () => {
 const showTodo = (message: string) => {
   showInfo(`${message}将在后续阶段接入`)
 }
+
+onMounted(() => {
+  loadStudents()
+})
 </script>
 
 <template>
@@ -65,6 +92,7 @@ const showTodo = (message: string) => {
       :loading="tableLoading"
       @view="(student) => router.push(`/students/${student.id}`)"
       @edit="(student) => router.push(`/students/${student.id}/edit`)"
+      @delete="removeStudent"
       @status-change="openStatusChange"
     />
   </ContentPanel>

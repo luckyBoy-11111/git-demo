@@ -3,12 +3,15 @@ import { useRouter } from 'vue-router'
 import ContentPanel from '../../../shared/components/ContentPanel.vue'
 import PageHeader from '../../../shared/components/PageHeader.vue'
 import { showSuccess } from '../../../shared/utils/tip'
+import { createStudent } from '../api/student.api'
 import StudentForm from '../components/StudentForm.vue'
+import type { Student } from '../types/student'
 
 const router = useRouter()
 
-const submitForm = () => {
-  showSuccess('新增学生保存入口已预留')
+const submitForm = async (data: Partial<Student>) => {
+  await createStudent(data)
+  showSuccess('新增学生保存成功')
   router.push('/students')
 }
 </script>

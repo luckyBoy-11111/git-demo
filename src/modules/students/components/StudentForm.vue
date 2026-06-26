@@ -1,32 +1,50 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, watch } from 'vue'
 import FormSection from '../../../shared/components/FormSection.vue'
 import type { Student } from '../types/student'
 import { boardingTypeOptions, classOptions, genderOptions, gradeOptions, studentStatusOptions } from '../utils/options'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     submitLabel?: string
+    value?: Partial<Student>
   }>(),
   { submitLabel: '保存' },
 )
 
 const emit = defineEmits<{
-  submit: []
+  submit: [data: Partial<Student>]
   cancel: []
 }>()
 
-const form = reactive<Partial<Student>>({
+const defaultForm = (): Partial<Student> => ({
   gender: '男',
   studentStatus: '在读',
   boardingType: '走读',
+  academicYearId: 'year_2026',
+  semesterId: 'semester_2026_1',
   enrollmentYear: 2026,
 })
+
+const form = reactive<Partial<Student>>(defaultForm())
+
+const resetForm = (value?: Partial<Student>) => {
+  Object.keys(form).forEach((key) => {
+    delete form[key as keyof Student]
+  })
+  Object.assign(form, defaultForm(), value ?? {})
+}
+
+watch(() => props.value, resetForm, { immediate: true, deep: true })
+
+const submitForm = () => {
+  emit('submit', { ...form })
+}
 </script>
 
 <template>
   <el-form class="student-form" :model="form" label-width="110px">
-    <FormSection title="基础信息">
+    <FormSection title="基本信息">
       <el-row :gutter="18">
         <el-col :span="6"><el-form-item label="学号"><el-input v-model="form.studentNo" /></el-form-item></el-col>
         <el-col :span="6"><el-form-item label="姓名"><el-input v-model="form.name" /></el-form-item></el-col>
@@ -72,7 +90,7 @@ const form = reactive<Partial<Student>>({
       <el-form-item label="备注"><el-input v-model="form.remark" type="textarea" :rows="3" /></el-form-item>
       <div class="form-footer">
         <el-button @click="emit('cancel')">取消</el-button>
-        <el-button type="primary" @click="emit('submit')">{{ submitLabel }}</el-button>
+        <el-button type="primary" @click="submitForm">{{ submitLabel }}</el-button>
       </div>
     </FormSection>
   </el-form>

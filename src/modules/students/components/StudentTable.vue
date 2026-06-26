@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Edit, Switch, View } from '@element-plus/icons-vue'
+import { Delete, Edit, Switch, View } from '@element-plus/icons-vue'
 import StatusTag from '../../../shared/components/StatusTag.vue'
 import type { Student } from '../types/student'
 
@@ -11,6 +11,7 @@ const props = defineProps<{
 const emit = defineEmits<{
   view: [student: Student]
   edit: [student: Student]
+  delete: [student: Student]
   statusChange: [student: Student]
 }>()
 
@@ -45,11 +46,12 @@ const statusType = (status: Student['studentStatus']) => {
     <el-table-column prop="primaryContactPhone" label="主要联系人电话" min-width="140" />
     <el-table-column prop="enrollmentYear" label="入学年份" width="96" />
     <el-table-column prop="updatedAt" label="更新时间" min-width="150" />
-    <el-table-column label="操作" fixed="right" width="230">
+    <el-table-column label="操作" fixed="right" width="300">
       <template #default="{ row }">
         <el-button link type="primary" :icon="View" @click="emit('view', row)">详情</el-button>
         <el-button link type="primary" :icon="Edit" @click="emit('edit', row)">编辑</el-button>
         <el-button link type="primary" :icon="Switch" @click="emit('statusChange', row)">异动</el-button>
+        <el-button link type="danger" :icon="Delete" @click="emit('delete', row)">删除</el-button>
       </template>
     </el-table-column>
   </el-table>
