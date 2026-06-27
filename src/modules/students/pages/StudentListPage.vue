@@ -77,7 +77,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <PageHeader title="学生档案123" description="查询、筛选和维护学生基础档案、家长信息、住宿信息与学籍异动记录。">
+  <PageHeader title="学生档案" description="查询、筛选和维护学生基础档案、家长信息、住宿信息与学籍异动记录。">
     <template #actions>
       <el-button :icon="Upload" @click="showTodo('批量导入')">批量导入</el-button>
       <el-button :icon="Download" @click="showTodo('导出学生档案')">导出</el-button>
