@@ -300,7 +300,7 @@ onMounted(() => {
 </script>
 
 <template>
-  <PageHeader title="班级管理" description="维护年级、行政班、班级学生、班主任、任课教师与班级课表等基础教务数据。">
+  <PageHeader title="班级管理123" description="维护年级、行政班、班级学生、班主任、任课教师与班级课表等基础教务数据。">
     <template #actions>
       <el-button :icon="Download" @click="exportClasses">导出</el-button>
       <el-button type="primary" :icon="Plus" @click="openCreateDialog">新增班级</el-button>
