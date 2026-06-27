@@ -82,6 +82,7 @@ onMounted(() => {
       <el-button :icon="Upload" @click="showTodo('批量导入')">批量导入</el-button>
       <el-button :icon="Download" @click="showTodo('导出学生档案')">导出</el-button>
       <el-button type="primary" :icon="Plus" @click="router.push('/students/create')">新增学生</el-button>
+      <p>Lorem ipsum dolor sit amet.</p>
     </template>
   </PageHeader>
 
