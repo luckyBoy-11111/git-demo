@@ -35,7 +35,7 @@ onMounted(loadStudent)
 </script>
 
 <template>
-  <PageHeader :title="student ? `编辑学生：${student.name}` : '编辑学生'" description="更新学生档案信息，并保存到 json-server。" />
+  <PageHeader :title="student ? `123编辑学生：${student.name}` : '123编辑学生'" description="更新学生档案信息，并保存到 json-server。" />
   <ContentPanel v-loading="loading">
     <StudentForm v-if="student" :value="student" submit-label="保存修改" @submit="submitForm" @cancel="router.back()" />
     <EmptyState v-else-if="!loading" title="未找到学生档案" description="请返回列表后重新选择学生。" />
