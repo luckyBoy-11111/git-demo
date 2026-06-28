@@ -22,6 +22,11 @@ jobs:
     if: github.event_name != 'create' || github.event.ref_type == 'tag'
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Create release notes
         id: release_notes
         env:
