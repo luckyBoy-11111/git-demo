@@ -4,6 +4,13 @@ on:
   push:
     tags:
       - "*"
+  create:
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Tag name to release"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -12,15 +19,29 @@ jobs:
   create-release:
     name: Create GitHub release
     runs-on: ubuntu-latest
+    if: github.event_name != 'create' || github.event.ref_type == 'tag'
 
     steps:
       - name: Create release notes
         id: release_notes
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_REF: ${{ github.event.ref }}
+          INPUT_TAG_NAME: ${{ inputs.tag_name }}
         run: |
+          if [ -n "${INPUT_TAG_NAME}" ]; then
+            tag_name="${INPUT_TAG_NAME}"
+          elif [ "${EVENT_NAME}" = "create" ]; then
+            tag_name="${EVENT_REF}"
+          else
+            tag_name="${GITHUB_REF_NAME}"
+          fi
+
           release_time="$(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S %Z')"
           {
+            echo "tag_name=${tag_name}"
             echo "body<<EOF"
-            echo "Release tag: ${GITHUB_REF_NAME}"
+            echo "Release tag: ${tag_name}"
             echo "Release time: ${release_time}"
             echo "EOF"
           } >> "${GITHUB_OUTPUT}"
@@ -28,8 +49,9 @@ jobs:
       - name: Create GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG_NAME: ${{ steps.release_notes.outputs.tag_name }}
           RELEASE_BODY: ${{ steps.release_notes.outputs.body }}
         run: |
-          gh release create "${GITHUB_REF_NAME}" \
-            --title "${GITHUB_REF_NAME}" \
+          gh release create "${TAG_NAME}" \
+            --title "${TAG_NAME}" \
             --notes "${RELEASE_BODY}"
