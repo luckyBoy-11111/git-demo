@@ -45,7 +45,7 @@ onMounted(loadDetail)
 </script>
 
 <template>
-  <PageHeader title="学生详情" description="集中展示学生档案、家长信息、住宿信息、学籍记录和后续扩展记录。">
+  <PageHeader title="学生详情456" description="集中展示学生档案、家长信息、住宿信息、学籍记录和后续扩展记录。">
     <template #actions>
       <el-button :icon="Back" @click="router.push('/students')">返回列表</el-button>
     </template>
