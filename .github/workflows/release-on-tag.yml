@@ -1,0 +1,35 @@
+name: Release on tag
+
+on:
+  push:
+    tags:
+      - "*"
+
+permissions:
+  contents: write
+
+jobs:
+  create-release:
+    name: Create GitHub release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create release notes
+        id: release_notes
+        run: |
+          release_time="$(TZ='Asia/Shanghai' date '+%Y-%m-%d %H:%M:%S %Z')"
+          {
+            echo "body<<EOF"
+            echo "Release tag: ${GITHUB_REF_NAME}"
+            echo "Release time: ${release_time}"
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_BODY: ${{ steps.release_notes.outputs.body }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --notes "${RELEASE_BODY}"
